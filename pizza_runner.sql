@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 14, 2023 at 01:55 AM
--- Server version: 10.4.27-MariaDB
--- PHP Version: 8.2.0
+-- Generation Time: Jun 23, 2023 at 12:33 PM
+-- Server version: 10.4.25-MariaDB
+-- PHP Version: 8.1.10
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -25,6 +25,43 @@ DELIMITER $$
 --
 -- Procedures
 --
+CREATE DEFINER=`root`@`localhost` PROCEDURE `callForDataMart` ()   BEGIN
+	SELECT customer_orders.order_id, runner_orders.runner_id, customer_orders.customer_id, pizza_names.pizza_name FROM customer_orders
+JOIN runner_orders
+ON runner_orders.order_id = customer_orders.order_id
+JOIN pizza_names
+ON pizza_names.pizza_id = customer_orders.pizza_id;
+
+END$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `get20RecentlyRegistered` ()   BEGIN
+	SELECT customers.customer_id, customers.first_name, customers.last_name, customers.email, customers.registration_date FROM customers ORDER BY registration_date DESC LIMIT 20;
+END$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `getRunnerOrders` (IN `r_runner_id` INT)   BEGIN 
+
+	SELECT * FROM runner_orders
+    WHERE runner_orders.runner_id = r_runner_id;
+    
+END$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `getRunnersCompletedOrders` ()   BEGIN
+	SELECT runner_orders.runner_id, COUNT(runner_orders.order_id) AS 'completed_orders' 
+    FROM runner_orders 
+    WHERE runner_orders.cancellation IS NULL OR runner_orders.cancellation = '' 
+    GROUP BY(runner_orders.runner_id);
+END$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `getTopPizzas` ()   BEGIN
+	
+    SELECT pizza_names.pizza_id, pizza_names.pizza_name, COUNT(customer_orders.pizza_id) as 'Total_Orders' FROM customer_orders
+    JOIN pizza_names ON pizza_names.pizza_id = customer_orders.pizza_id
+    GROUP BY (pizza_names.pizza_id)
+    ORDER BY Total_Orders DESC
+    LIMIT 10;
+    
+END$$
+
 CREATE DEFINER=`root`@`localhost` PROCEDURE `most_ordered_pizza_in_a_day` (IN `p_OrderDate` DATE)   BEGIN
     SELECT p.pizza_name, COUNT(cu.order_id) as 'num_of_pizzas_ordered'
     FROM pizza_names p
@@ -54,7 +91,8 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `total_customer_orders_per_day` ()  
 
 SELECT DISTINCT DATE(order_date) as 'order_date', COUNT(order_id) as 'num_of_orders'
 FROM customer_orders
-GROUP BY DATE(order_date);
+GROUP BY DATE(order_date)
+ORDER BY order_date DESC;
 
 END$$
 
@@ -73,7 +111,7 @@ CREATE TABLE `admins` (
   `email` varchar(30) NOT NULL,
   `address` varchar(255) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `admins`
@@ -93,13 +131,14 @@ CREATE TABLE `audit_table` (
   `runner_id` int(11) DEFAULT NULL,
   `time_cancellation` time DEFAULT NULL,
   `date_of_cancellation` date DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `audit_table`
 --
 
 INSERT INTO `audit_table` (`order_id`, `runner_id`, `time_cancellation`, `date_of_cancellation`) VALUES
+(6, 3, '11:07:50', '2023-06-02'),
 (6, 3, '11:07:50', '2023-06-02');
 
 -- --------------------------------------------------------
@@ -119,65 +158,78 @@ CREATE TABLE `customers` (
   `city` varchar(50) DEFAULT NULL,
   `state` varchar(50) DEFAULT NULL,
   `postal_code` varchar(20) DEFAULT NULL,
-  `country` varchar(50) DEFAULT NULL,
+  `country` varchar(25) DEFAULT NULL,
   `registration_date` datetime DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `customers`
 --
 
 INSERT INTO `customers` (`customer_id`, `first_name`, `last_name`, `email`, `password`, `phone_number`, `address`, `city`, `state`, `postal_code`, `country`, `registration_date`) VALUES
-(1, 'Marc', 'Flipsen', 'mflipsen0@tinyurl.com', 'atguhwhikUD773Kns+', '184-465-9080', '121.31.19.174', 'Labuhankananga', NULL, NULL, 'Indonesia', '2023-06-12 14:20:20'),
-(2, 'Flin', 'Dessent', 'fdessent1@hugedomains.com', 'ukgntqgylZO935`cw(ue)nL\"Y', '486-917-1316', '3.246.123.179', 'Paris 13', 'Île-de-France', '75638 CEDEX 13', 'France', '2023-06-12 14:20:20'),
-(3, 'Hailee', 'Joslow', 'hjoslow2@drupal.org', 'huqxkcsxoWR2629KoFqjzJe8}', '692-647-2879', '104.137.42.113', 'Fortaleza', NULL, '60000-000', 'Brazil', '2023-06-12 14:20:20'),
-(4, 'Aindrea', 'Lunnon', 'alunnon3@moonfruit.com', 'csesstzbxBQ951QKdZ', '654-334-0178', '37.244.7.48', 'Geshan', NULL, NULL, 'China', '2023-06-12 14:20:20'),
-(5, 'Vassili', 'Ludmann', 'vludmann4@google.co.uk', 'vxneyxucnLI547okD', '780-195-8957', '124.210.87.54', 'Mesopotam', NULL, NULL, 'Albania', '2023-06-12 14:20:20'),
-(6, 'Jennie', 'Winspire', 'jwinspire5@state.gov', 'zxjabdozfAM221Hc4!3a5su', '189-742-6922', '245.130.120.105', 'Kultayevo', NULL, '614520', 'Russia', '2023-06-12 14:20:20'),
-(7, 'Kevina', 'Enticknap', 'kenticknap6@intel.com', 'lzdhnhtwkWX571XoQ_T8Luq$%', '444-970-9489', '169.143.134.225', 'Unanu', NULL, NULL, 'Micronesia', '2023-06-12 14:20:20'),
-(8, 'Cortie', 'Snoden', 'csnoden7@bandcamp.com', 'xrhtslacvDG619\"%Y%5VPGuBD', '167-272-4049', '107.42.118.115', 'Yangji', NULL, NULL, 'China', '2023-06-12 14:20:20'),
-(9, 'Rhetta', 'Kettles', 'rkettles8@oakley.com', 'tcbjvsiveEZ512wJM8A(=V>!N', '579-551-0975', '37.74.154.250', 'Chadi', NULL, NULL, 'China', '2023-06-12 14:20:20'),
-(10, 'Darren', 'O\'Corrigane', 'docorrigane9@canalblog.com', 'fbvansqnaGY134O72Db6uGYA', '269-871-1246', '33.108.145.176', 'Khoroshëvo-Mnevniki', NULL, '676280', 'Russia', '2023-06-12 14:20:20'),
-(11, 'Morgan', 'Amphlett', 'mamphletta@google.fr', 'fiudxvuvjKD892/!/pu5', '600-738-0795', '131.225.106.48', 'Kolomyagi', NULL, '198264', 'Russia', '2023-06-12 14:20:20'),
-(12, 'Katti', 'Rainforth', 'krainforthb@mac.com', 'drstpqpkjWA0767', '200-393-5672', '141.3.222.201', 'Drayton Valley', 'Alberta', 'T7A', 'Canada', '2023-06-12 14:20:20'),
-(13, 'Eugenia', 'Saint', 'esaintc@g.co', 'fucfneeiiQM7897$i.2<DN', '950-277-4588', '21.36.14.175', 'Bordeaux', 'Aquitaine', '33100', 'France', '2023-06-12 14:20:20'),
-(14, 'Fielding', 'Haye', 'fhayed@geocities.com', 'tnlekyjwyLO206842NBC+IT', '461-561-2023', '109.178.46.214', 'Huaikan', NULL, NULL, 'China', '2023-06-12 14:20:20'),
-(15, 'Alanna', 'Fomichkin', 'afomichkine@howstuffworks.com', 'fxqhbvtofOO4146_1/c4qgRi8', '585-337-3440', '6.212.60.9', 'Rochester', 'New York', '14604', 'United States', '2023-06-12 14:20:20'),
-(16, 'Alejoa', 'Falco', 'afalcof@pcworld.com', 'kltejvquhSP3390am_Qw#lx', '921-823-1331', '28.194.158.81', 'Vorontsovka', NULL, '353664', 'Russia', '2023-06-12 14:20:20'),
-(17, 'Edyth', 'Lindmark', 'elindmarkg@google.it', 'wjadrkihoOR486`!', '300-486-1063', '62.70.14.199', 'Ansheng', NULL, NULL, 'China', '2023-06-12 14:20:20'),
-(18, 'Ingrim', 'Cockitt', 'icockitth@blogspot.com', 'jgoxovgtiFE151(m#7', '366-905-3238', '60.157.155.234', 'Tanshan', NULL, NULL, 'China', '2023-06-12 14:20:20'),
-(19, 'Vi', 'Carneck', 'vcarnecki@utexas.edu', 'soodqqymyKV136li|zr', '792-776-5075', '92.158.155.127', 'Concordia', NULL, '3200', 'Argentina', '2023-06-12 14:20:20'),
-(20, 'Gray', 'Tafani', 'gtafanij@virginia.edu', 'zfriybvpqWA7324Pt1wqx9u_9', '155-508-3283', '152.220.116.225', 'Norrköping', 'Östergötland', '602 34', 'Sweden', '2023-06-12 14:20:20'),
-(21, 'Elizabet', 'Keaton', 'ekeatonk@hugedomains.com', 'llicsdknyDH291~n#_P!~%\'Jk', '319-189-1446', '10.148.110.33', 'Kamieniec Ząbkowicki', NULL, '57-230', 'Poland', '2023-06-12 14:20:20'),
-(29, 'Liam', 'Klagge', 'lklagges@myspace.com', 'sscfyzryvSB407vN1cgQ#JV3', '408-663-7605', '205.147.240.236', 'Niitsu-honchō', NULL, '959-1855', 'Japan', '2023-06-12 14:20:20'),
-(30, 'Kane', 'Brisland', 'kbrislandt@bloglines.com', 'yatuxltizDI084UyBry', '961-416-4601', '41.198.185.236', 'Vitória de Santo Antão', NULL, '55600-000', 'Brazil', '2023-06-12 14:20:20'),
-(31, 'Jameson', 'Zouch', 'jzouchu@utexas.edu', 'qiojwemcqWA945IyI{S4~B', '633-634-9399', '231.29.140.15', 'Kanzaki', NULL, '842-0001', 'Japan', '2023-06-12 14:20:20'),
-(32, 'Ronalda', 'McLagain', 'rmclagainv@msn.com', 'bqukdkxpiOB8323laky=B9~o', '179-781-9954', '118.215.137.58', 'Infanta', NULL, '4336', 'Philippines', '2023-06-12 14:20:20'),
-(33, 'Aprilette', 'Hekkert', 'ahekkertw@slashdot.org', 'tsieyrukuZS454o<CFjZ_,,\'', '381-942-6979', '138.243.247.53', 'Daxin', NULL, NULL, 'China', '2023-06-12 14:20:20'),
-(34, 'Darby', 'Morling', 'dmorlingx@quantcast.com', 'enuwzpjncPQ7071D0RKVHO', '542-262-5944', '222.37.46.217', 'Sanchang', NULL, NULL, 'China', '2023-06-12 14:20:20'),
-(35, 'Katharyn', 'Flanagan', 'kflanagany@histats.com', 'cwnzbvkexRA546E`u', '560-783-7163', '161.162.88.24', 'Wangmo', NULL, NULL, 'China', '2023-06-12 14:20:20'),
-(36, 'Ganny', 'Kernermann', 'gkernermannz@storify.com', 'hcuueysjnQC068fNa07g', '108-732-3555', '133.233.253.217', 'Letovice', NULL, '679 61', 'Czech Republic', '2023-06-12 14:20:20'),
-(37, 'Guy', 'Swaby', 'gswaby10@discovery.com', 'rzrrkrocyJL570agn', '433-322-8647', '118.135.58.228', 'Jingxiyuan', NULL, NULL, 'China', '2023-06-12 14:20:20'),
-(38, 'Wyn', 'Carous', 'wcarous11@ehow.com', 'ffyxtamnrQE861F8csc0Yl', '549-434-6944', '64.254.183.31', 'Kétou', NULL, NULL, 'Benin', '2023-06-12 14:20:20'),
-(39, 'Danni', 'Bellson', 'dbellson12@shutterfly.com', 'zahnuvuudEN887sLkvlDp+', '176-195-8784', '11.7.75.59', 'Rengasdengklok', NULL, NULL, 'Indonesia', '2023-06-12 14:20:20'),
-(40, 'Ula', 'Leile', 'uleile13@xinhuanet.com', 'yhmjutssnRT377{py7|=t#', '398-808-5712', '95.119.128.42', 'Shenshu', NULL, NULL, 'China', '2023-06-12 14:20:20'),
-(41, 'Bridgette', 'Gaw', 'bgaw14@ed.gov', 'drljfksaeEY339tn\"#c9QM(lD', '799-687-0230', '152.224.195.155', 'La Paz Centro', NULL, NULL, 'Nicaragua', '2023-06-12 14:20:20'),
-(42, 'Adrea', 'Jammet', 'ajammet15@thetimes.co.uk', 'roagaqnrrKR957BA}6', '674-550-3352', '129.51.110.85', 'Santos Evos', 'Viseu', '3505-318', 'Portugal', '2023-06-12 14:20:20'),
-(43, 'Brody', 'Demoge', 'bdemoge16@wired.com', 'lpfxyochvRQ026pjQ8\",*QOLh', '850-634-7558', '157.2.29.188', 'La Cumbre', NULL, '760518', 'Colombia', '2023-06-12 14:20:20'),
-(44, 'Creighton', 'Kunisch', 'ckunisch17@nydailynews.com', 'cdsgurgeyFR5739TTL', '155-145-7287', '218.51.235.46', 'Safonovo', NULL, '308510', 'Russia', '2023-06-12 14:20:20'),
-(45, 'Alano', 'Miliffe', 'amiliffe18@phpbb.com', 'rnduckyulRG937HsP$MfBBGh', '345-712-2674', '167.8.141.92', 'Gracias', NULL, NULL, 'Honduras', '2023-06-12 14:20:20'),
-(46, 'Kora', 'Pedlow', 'kpedlow19@blog.com', 'zroxfgicrFV432Qm=xOD~xw_', '231-526-2736', '11.66.60.137', 'Stavanger', 'Rogaland', '4025', 'Norway', '2023-06-12 14:20:20'),
-(47, 'Alleen', 'Mayze', 'amayze1a@spiegel.de', 'yxdunsvxzZE569+WvNY=`q>%G', '223-374-8716', '218.213.214.186', 'Zernograd', NULL, '347743', 'Russia', '2023-06-12 14:20:20'),
-(48, 'Kattie', 'Mouat', 'kmouat1b@utexas.edu', 'sutzuqaczCZ194m6tor&agSVY', '274-616-8060', '18.110.107.181', 'Kemiri', NULL, NULL, 'Indonesia', '2023-06-12 14:20:20'),
-(49, 'Angil', 'Tomsen', 'atomsen1c@youtube.com', 'sopoxxgkrUO115h8O}nIY~m4p', '201-102-5576', '62.176.94.196', 'Zhaoqing', NULL, NULL, 'China', '2023-06-12 14:20:20'),
-(50, 'Arlene', 'Dulinty', 'adulinty1d@illinois.edu', 'metlloperJA208bV5QT', '293-439-5119', '134.201.209.244', 'Uyskoye', NULL, '456470', 'Russia', '2023-06-12 14:20:20'),
-(51, 'Parsifal', 'Stanbra', 'pstanbra1e@discovery.com', 'ifrejhydpOC5263\'', '812-721-6989', '198.223.134.27', 'Tangjia', NULL, NULL, 'China', '2023-06-12 14:20:20'),
-(52, 'Terri', 'Tramel', 'ttramel1f@jiathis.com', 'dxxfjkiefAS2871S(Q?0%C+=r', '439-529-2708', '93.27.253.180', 'Basqal', NULL, NULL, 'Azerbaijan', '2023-06-12 14:20:20'),
-(53, 'Putnem', 'Bramley', 'pbramley1g@google.com.au', 'kabqlkgkdBK9360', '299-338-6454', '52.57.33.241', 'Nova Viçosa', NULL, '45920-000', 'Brazil', '2023-06-12 14:20:20'),
-(54, 'Kira', 'Coopper', 'kcoopper1h@hubpages.com', 'uasqszdjgUH691Aa6}', '964-696-9206', '112.33.94.196', 'Buriram', NULL, '31180', 'Thailand', '2023-06-12 14:20:20'),
-(55, 'Kendall', 'Randle', 'krandle1i@sitemeter.com', 'vdvgtfahnET717URJU=', '260-181-5538', '8.54.246.103', 'Tagoloan', NULL, '9222', 'Philippines', '2023-06-12 14:20:20'),
-(56, 'Briny', 'Blueman', 'bblueman1j@hatena.ne.jp', 'ouxitddnoMB97188', '860-625-5674', '130.218.209.175', 'Aūa', NULL, '96799', 'American Samoa', '2023-06-12 14:20:20'),
-(57, 'Taffy', 'Barthelme', 'tbarthelme1k@ca.gov', 'ubsuokambYN595\"H_', '715-344-9423', '27.29.239.2', 'Takāb', NULL, NULL, 'Iran', '2023-06-12 14:20:20');
+(1, 'Marc', 'Flipsen', 'mflipsen0@tinyurl.com', 'atguhwhikUD773Kns+', '184-465-9080', '121.31.19.174', 'Labuhankananga', NULL, NULL, NULL, '2023-06-12 14:20:20'),
+(2, 'Flin', 'Dessent', 'fdessent1@hugedomains.com', 'ukgntqgylZO935`cw(ue)nL\"Y', '486-917-1316', '3.246.123.179', 'Paris 13', 'Île-de-France', '75638 CEDEX 13', NULL, '2023-06-12 14:20:20'),
+(3, 'Hailee', 'Joslow', 'hjoslow2@drupal.org', 'huqxkcsxoWR2629KoFqjzJe8}', '692-647-2879', '104.137.42.113', 'Fortaleza', NULL, '60000-000', NULL, '2023-06-12 14:20:20'),
+(4, 'Aindrea', 'Lunnon', 'alunnon3@moonfruit.com', 'csesstzbxBQ951QKdZ', '654-334-0178', '37.244.7.48', 'Geshan', NULL, NULL, NULL, '2023-06-12 14:20:20'),
+(5, 'Vassili', 'Ludmann', 'vludmann4@google.co.uk', 'vxneyxucnLI547okD', '780-195-8957', '124.210.87.54', 'Mesopotam', NULL, NULL, NULL, '2023-06-12 14:20:20'),
+(6, 'Jennie', 'Winspire', 'jwinspire5@state.gov', 'zxjabdozfAM221Hc4!3a5su', '189-742-6922', '245.130.120.105', 'Kultayevo', NULL, '614520', NULL, '2023-06-12 14:20:20'),
+(7, 'Kevina', 'Enticknap', 'kenticknap6@intel.com', 'lzdhnhtwkWX571XoQ_T8Luq$%', '444-970-9489', '169.143.134.225', 'Unanu', NULL, NULL, NULL, '2023-06-12 14:20:20'),
+(8, 'Cortie', 'Snoden', 'csnoden7@bandcamp.com', 'xrhtslacvDG619\"%Y%5VPGuBD', '167-272-4049', '107.42.118.115', 'Yangji', NULL, NULL, NULL, '2023-06-12 14:20:20'),
+(9, 'Rhetta', 'Kettles', 'rkettles8@oakley.com', 'tcbjvsiveEZ512wJM8A(=V>!N', '579-551-0975', '37.74.154.250', 'Chadi', NULL, NULL, NULL, '2023-06-12 14:20:20'),
+(10, 'Darren', 'O\'Corrigane', 'docorrigane9@canalblog.com', 'fbvansqnaGY134O72Db6uGYA', '269-871-1246', '33.108.145.176', 'Khoroshëvo-Mnevniki', NULL, '676280', NULL, '2023-06-12 14:20:20'),
+(11, 'Morgan', 'Amphlett', 'mamphletta@google.fr', 'fiudxvuvjKD892/!/pu5', '600-738-0795', '131.225.106.48', 'Kolomyagi', NULL, '198264', NULL, '2023-06-12 14:20:20'),
+(12, 'Katti', 'Rainforth', 'krainforthb@mac.com', 'drstpqpkjWA0767', '200-393-5672', '141.3.222.201', 'Drayton Valley', 'Alberta', 'T7A', NULL, '2023-06-12 14:20:20'),
+(13, 'Eugenia', 'Saint', 'esaintc@g.co', 'fucfneeiiQM7897$i.2<DN', '950-277-4588', '21.36.14.175', 'Bordeaux', 'Aquitaine', '33100', NULL, '2023-06-12 14:20:20'),
+(14, 'Fielding', 'Haye', 'fhayed@geocities.com', 'tnlekyjwyLO206842NBC+IT', '461-561-2023', '109.178.46.214', 'Huaikan', NULL, NULL, NULL, '2023-06-12 14:20:20'),
+(15, 'Alanna', 'Fomichkin', 'afomichkine@howstuffworks.com', 'fxqhbvtofOO4146_1/c4qgRi8', '585-337-3440', '6.212.60.9', 'Rochester', 'New York', '14604', NULL, '2023-06-12 14:20:20'),
+(16, 'Alejoa', 'Falco', 'afalcof@pcworld.com', 'kltejvquhSP3390am_Qw#lx', '921-823-1331', '28.194.158.81', 'Vorontsovka', NULL, '353664', NULL, '2023-06-12 14:20:20'),
+(17, 'Edyth', 'Lindmark', 'elindmarkg@google.it', 'wjadrkihoOR486`!', '300-486-1063', '62.70.14.199', 'Ansheng', NULL, NULL, NULL, '2023-06-12 14:20:20'),
+(18, 'Ingrim', 'Cockitt', 'icockitth@blogspot.com', 'jgoxovgtiFE151(m#7', '366-905-3238', '60.157.155.234', 'Tanshan', NULL, NULL, NULL, '2023-06-12 14:20:20'),
+(19, 'Vi', 'Carneck', 'vcarnecki@utexas.edu', 'soodqqymyKV136li|zr', '792-776-5075', '92.158.155.127', 'Concordia', NULL, '3200', NULL, '2023-06-12 14:20:20'),
+(20, 'Gray', 'Tafani', 'gtafanij@virginia.edu', 'zfriybvpqWA7324Pt1wqx9u_9', '155-508-3283', '152.220.116.225', 'Norrköping', 'Östergötland', '602 34', NULL, '2023-06-12 14:20:20'),
+(21, 'Elizabet', 'Keaton', 'ekeatonk@hugedomains.com', 'llicsdknyDH291~n#_P!~%\'Jk', '319-189-1446', '10.148.110.33', 'Kamieniec Ząbkowicki', NULL, '57-230', NULL, '2023-06-12 14:20:20'),
+(29, 'Liam', 'Klagge', 'lklagges@myspace.com', 'sscfyzryvSB407vN1cgQ#JV3', '408-663-7605', '205.147.240.236', 'Niitsu-honchō', NULL, '959-1855', NULL, '2023-06-12 14:20:20'),
+(30, 'Kane', 'Brisland', 'kbrislandt@bloglines.com', 'yatuxltizDI084UyBry', '961-416-4601', '41.198.185.236', 'Vitória de Santo Antão', NULL, '55600-000', NULL, '2023-06-12 14:20:20'),
+(31, 'Jameson', 'Zouch', 'jzouchu@utexas.edu', 'qiojwemcqWA945IyI{S4~B', '633-634-9399', '231.29.140.15', 'Kanzaki', NULL, '842-0001', NULL, '2023-06-12 14:20:20'),
+(32, 'Ronalda', 'McLagain', 'rmclagainv@msn.com', 'bqukdkxpiOB8323laky=B9~o', '179-781-9954', '118.215.137.58', 'Infanta', NULL, '4336', NULL, '2023-06-12 14:20:20'),
+(33, 'Aprilette', 'Hekkert', 'ahekkertw@slashdot.org', 'tsieyrukuZS454o<CFjZ_,,\'', '381-942-6979', '138.243.247.53', 'Daxin', NULL, NULL, NULL, '2023-06-12 14:20:20'),
+(34, 'Darby', 'Morling', 'dmorlingx@quantcast.com', 'enuwzpjncPQ7071D0RKVHO', '542-262-5944', '222.37.46.217', 'Sanchang', NULL, NULL, NULL, '2023-06-12 14:20:20'),
+(35, 'Katharyn', 'Flanagan', 'kflanagany@histats.com', 'cwnzbvkexRA546E`u', '560-783-7163', '161.162.88.24', 'Wangmo', NULL, NULL, NULL, '2023-06-12 14:20:20'),
+(36, 'Ganny', 'Kernermann', 'gkernermannz@storify.com', 'hcuueysjnQC068fNa07g', '108-732-3555', '133.233.253.217', 'Letovice', NULL, '679 61', NULL, '2023-06-12 14:20:20'),
+(37, 'Guy', 'Swaby', 'gswaby10@discovery.com', 'rzrrkrocyJL570agn', '433-322-8647', '118.135.58.228', 'Jingxiyuan', NULL, NULL, NULL, '2023-06-12 14:20:20'),
+(38, 'Wyn', 'Carous', 'wcarous11@ehow.com', 'ffyxtamnrQE861F8csc0Yl', '549-434-6944', '64.254.183.31', 'Kétou', NULL, NULL, NULL, '2023-06-12 14:20:20'),
+(39, 'Danni', 'Bellson', 'dbellson12@shutterfly.com', 'zahnuvuudEN887sLkvlDp+', '176-195-8784', '11.7.75.59', 'Rengasdengklok', NULL, NULL, NULL, '2023-06-12 14:20:20'),
+(40, 'Ula', 'Leile', 'uleile13@xinhuanet.com', 'yhmjutssnRT377{py7|=t#', '398-808-5712', '95.119.128.42', 'Shenshu', NULL, NULL, NULL, '2023-06-12 14:20:20'),
+(41, 'Bridgette', 'Gaw', 'bgaw14@ed.gov', 'drljfksaeEY339tn\"#c9QM(lD', '799-687-0230', '152.224.195.155', 'La Paz Centro', NULL, NULL, NULL, '2023-06-12 14:20:20'),
+(42, 'Adrea', 'Jammet', 'ajammet15@thetimes.co.uk', 'roagaqnrrKR957BA}6', '674-550-3352', '129.51.110.85', 'Santos Evos', 'Viseu', '3505-318', NULL, '2023-06-12 14:20:20'),
+(43, 'Brody', 'Demoge', 'bdemoge16@wired.com', 'lpfxyochvRQ026pjQ8\",*QOLh', '850-634-7558', '157.2.29.188', 'La Cumbre', NULL, '760518', NULL, '2023-06-12 14:20:20'),
+(44, 'Creighton', 'Kunisch', 'ckunisch17@nydailynews.com', 'cdsgurgeyFR5739TTL', '155-145-7287', '218.51.235.46', 'Safonovo', NULL, '308510', NULL, '2023-06-12 14:20:20'),
+(45, 'Alano', 'Miliffe', 'amiliffe18@phpbb.com', 'rnduckyulRG937HsP$MfBBGh', '345-712-2674', '167.8.141.92', 'Gracias', NULL, NULL, NULL, '2023-06-12 14:20:20'),
+(46, 'Kora', 'Pedlow', 'kpedlow19@blog.com', 'zroxfgicrFV432Qm=xOD~xw_', '231-526-2736', '11.66.60.137', 'Stavanger', 'Rogaland', '4025', NULL, '2023-06-12 14:20:20'),
+(47, 'Alleen', 'Mayze', 'amayze1a@spiegel.de', 'yxdunsvxzZE569+WvNY=`q>%G', '223-374-8716', '218.213.214.186', 'Zernograd', NULL, '347743', NULL, '2023-06-12 14:20:20'),
+(48, 'Kattie', 'Mouat', 'kmouat1b@utexas.edu', 'sutzuqaczCZ194m6tor&agSVY', '274-616-8060', '18.110.107.181', 'Kemiri', NULL, NULL, NULL, '2023-06-12 14:20:20'),
+(49, 'Angil', 'Tomsen', 'atomsen1c@youtube.com', 'sopoxxgkrUO115h8O}nIY~m4p', '201-102-5576', '62.176.94.196', 'Zhaoqing', NULL, NULL, NULL, '2023-06-12 14:20:20'),
+(50, 'Arlene', 'Dulinty', 'adulinty1d@illinois.edu', 'metlloperJA208bV5QT', '293-439-5119', '134.201.209.244', 'Uyskoye', NULL, '456470', NULL, '2023-06-12 14:20:20'),
+(51, 'Parsifal', 'Stanbra', 'pstanbra1e@discovery.com', 'ifrejhydpOC5263\'', '812-721-6989', '198.223.134.27', 'Tangjia', NULL, NULL, NULL, '2023-06-12 14:20:20'),
+(52, 'Terri', 'Tramel', 'ttramel1f@jiathis.com', 'dxxfjkiefAS2871S(Q?0%C+=r', '439-529-2708', '93.27.253.180', 'Basqal', NULL, NULL, NULL, '2023-06-12 14:20:20'),
+(53, 'Putnem', 'Bramley', 'pbramley1g@google.com.au', 'kabqlkgkdBK9360', '299-338-6454', '52.57.33.241', 'Nova Viçosa', NULL, '45920-000', NULL, '2023-06-12 14:20:20'),
+(54, 'Kira', 'Coopper', 'kcoopper1h@hubpages.com', 'uasqszdjgUH691Aa6}', '964-696-9206', '112.33.94.196', 'Buriram', NULL, '31180', NULL, '2023-06-12 14:20:20'),
+(55, 'Kendall', 'Randle', 'krandle1i@sitemeter.com', 'vdvgtfahnET717URJU=', '260-181-5538', '8.54.246.103', 'Tagoloan', NULL, '9222', NULL, '2023-06-12 14:20:20'),
+(56, 'Briny', 'Blueman', 'bblueman1j@hatena.ne.jp', 'ouxitddnoMB97188', '860-625-5674', '130.218.209.175', 'Aūa', NULL, '96799', NULL, '2023-06-12 14:20:20'),
+(57, 'Taffy', 'Barthelme', 'tbarthelme1k@ca.gov', 'ubsuokambYN595\"H_', '715-344-9423', '27.29.239.2', 'Takāb', NULL, NULL, NULL, '2023-06-12 14:20:20'),
+(58, 'Hans Zin ', 'Sanchez', 'sanchez@Gologolo.om', 'sanchez123', '777-6666-1111', 'lapasan', 'CDO', 'Lapasan', '9000', 'Philippines', '2023-06-23 10:59:35'),
+(59, 'Hans Zin ', 'Sanchez', 'sanchez@Gologolo.om', 'sanchez123', '777-6666-1111', 'lapasan', 'CDO', 'Lapasan', '9000', 'Philippines', '2023-06-23 11:01:55'),
+(60, 'Hello', 'World', 'world@gmail.com', '12345', '7777-111-2222', 'UwU', 'CDO', 'Lapasan', '9000', 'Philippines', '2023-06-23 11:02:34'),
+(61, 'Hello', 'World', 'world@gmail.com', '12345', '7777-111-2222', 'UwU', 'CDO', 'Lapasan', '9000', 'Philippines', '2023-06-23 11:03:24'),
+(62, 'Hello', 'World', 'world@gmail.com', '12345', '7777-111-2222', 'UwU', 'CDO', 'Lapasan', '9000', 'Philippines', '2023-06-23 11:03:53'),
+(63, 'Hello', 'World', 'world@gmail.com', '12345', '7777-111-2222', 'UwU', 'CDO', 'Lapasan', '9000', 'Philippines', '2023-06-23 11:05:12'),
+(64, 'Hello', 'World', 'world@gmail.com', '12345', '7777-111-2222', 'UwU', 'CDO', 'Lapasan', '9000', 'Philippines', '2023-06-23 11:08:02'),
+(65, 'Hello', 'World', 'world@gmail.com', '12345', '7777-111-2222', 'UwU', 'CDO', 'Lapasan', '9000', 'Philippines', '2023-06-23 11:08:04'),
+(66, 'Hello', 'World', 'world@gmail.com', '12345', '7777-111-2222', 'UwU', 'CDO', 'Lapasan', '9000', 'Philippines', '2023-06-23 11:12:11'),
+(67, 'Hel', 'World', 'world@gmail.com', '12345', '7777-111-2222', 'UwU', 'CDO', 'Lapasan', '9000', 'Philippines', '2023-06-23 11:12:57'),
+(68, 'Karl', 'Marx', 'marxZuckerber@yahoo.com', 'karl123', '0000-1111-2222', 'Address 5801', 'CDO', 'United', '9000', 'Philippines', '2023-06-23 11:23:09'),
+(69, 'Hector', 'Barbossa', 'UwU@gmail.com', 'justKillTheCode', '123456789', 'Lapsan', 'cagayan', 'meow', 'f678', 'USA', '2023-06-23 11:30:19'),
+(70, 'Hector ', 'Dragon', 'Dragon@gmaill.com', '123', '9999-999-9999', 'Lapasan', 'Wadiya', 'New Zealand', '8000', 'MeowWorld', '2023-06-23 11:39:47');
 
 -- --------------------------------------------------------
 
@@ -192,13 +244,21 @@ CREATE TABLE `customer_orders` (
   `exclusions` varchar(4) DEFAULT NULL,
   `extras` varchar(4) DEFAULT NULL,
   `order_date` datetime DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `customer_orders`
 --
 
 INSERT INTO `customer_orders` (`order_id`, `customer_id`, `pizza_id`, `exclusions`, `extras`, `order_date`) VALUES
+(1, 101, 1, '', '', '2021-01-01 18:05:02'),
+(2, 101, 1, '', '', '2021-01-01 19:00:52'),
+(3, 102, 1, '', '', '2021-01-02 23:51:23'),
+(3, 102, 2, '', 'NaN', '2021-01-02 23:51:23'),
+(4, 103, 1, '4', '', '2021-01-04 13:23:46'),
+(4, 103, 1, '4', '', '2021-01-04 13:23:46'),
+(4, 103, 2, '4', '', '2021-01-04 13:23:46'),
+(5, 104, 1, NULL, '1', '2021-01-08 21:00:29'),
 (1, 101, 1, '', '', '2021-01-01 18:05:02'),
 (2, 101, 1, '', '', '2021-01-01 19:00:52'),
 (3, 102, 1, '', '', '2021-01-02 23:51:23'),
@@ -220,13 +280,21 @@ CREATE TABLE `denormalized_table` (
   `customer_id` int(11) DEFAULT NULL,
   `pizza_id` int(11) NOT NULL DEFAULT 0,
   `pizza_name` text DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `denormalized_table`
 --
 
 INSERT INTO `denormalized_table` (`order_id`, `runner_id`, `customer_id`, `pizza_id`, `pizza_name`) VALUES
+(1, 1, 101, 1, 'Meat Lovers'),
+(2, 1, 101, 1, 'Meat Lovers'),
+(3, 1, 102, 1, 'Meat Lovers'),
+(3, 1, 102, 2, 'Vegetarian'),
+(4, 2, 103, 1, 'Meat Lovers'),
+(4, 2, 103, 1, 'Meat Lovers'),
+(4, 2, 103, 2, 'Vegetarian'),
+(5, 3, 104, 1, 'Meat Lovers'),
 (1, 1, 101, 1, 'Meat Lovers'),
 (2, 1, 101, 1, 'Meat Lovers'),
 (3, 1, 102, 1, 'Meat Lovers'),
@@ -246,7 +314,7 @@ CREATE TABLE `pizza_names` (
   `pizza_id` int(11) NOT NULL,
   `pizza_name` text DEFAULT NULL,
   `pizza_image` blob DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `pizza_names`
@@ -272,7 +340,7 @@ INSERT INTO `pizza_names` (`pizza_id`, `pizza_name`, `pizza_image`) VALUES
 CREATE TABLE `pizza_recipes` (
   `pizza_id` int(11) NOT NULL,
   `toppings` text DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `pizza_recipes`
@@ -291,40 +359,25 @@ INSERT INTO `pizza_recipes` (`pizza_id`, `toppings`) VALUES
 CREATE TABLE `pizza_toppings` (
   `topping_id` int(11) NOT NULL,
   `topping_name` text DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `pizza_toppings`
 --
 
 INSERT INTO `pizza_toppings` (`topping_id`, `topping_name`) VALUES
-(642, 'Onions'),
-(643, 'Italian Sausage'),
-(644, 'Bacon'),
-(645, 'Black Olive'),
-(646, 'Spinach'),
-(647, 'Pineapple'),
-(648, 'Jalapeno'),
-(649, 'Mozarella Cheese'),
-(650, 'Roasted Red Peppers'),
-(651, 'Fresh Origano'),
-(652, 'Cheddar Cheese'),
-(653, 'Pharmizan'),
-(654, 'Chicken'),
-(655, 'Mushroom'),
-(656, 'Pepperoni'),
-(657, 'Pesto Sauce'),
-(658, 'Fresh Mint Leaves'),
-(659, 'Fresh Pine Trees'),
-(660, 'Sweet Corn'),
-(661, 'Guchi'),
-(662, 'Ham'),
-(663, 'Green Olives'),
-(664, 'Ricotta'),
-(665, 'Fresh Silantro'),
-(666, 'Alfredo Sauce'),
-(667, 'Peppers'),
-(668, 'Fita Cheese');
+(729, 'Bacon'),
+(730, 'BBQ Sauce'),
+(731, 'Beef'),
+(732, 'Cheese'),
+(733, 'Chicken'),
+(734, 'Mushrooms'),
+(735, 'Onions'),
+(736, 'Pepperoni'),
+(737, 'Peppers'),
+(738, 'Salami'),
+(739, 'PTomatoes'),
+(740, 'Tomato Sauce');
 
 --
 -- Triggers `pizza_toppings`
@@ -357,20 +410,27 @@ CREATE TABLE `runners` (
   `age` int(11) DEFAULT NULL,
   `birth_date` date DEFAULT NULL,
   `registration_date` date DEFAULT curdate()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `runners`
 --
 
 INSERT INTO `runners` (`runner_id`, `first_name`, `last_name`, `age`, `birth_date`, `registration_date`) VALUES
-(1, '', '', NULL, NULL, '2021-01-01'),
+(1, 'Karl', 'Urban', NULL, NULL, '2021-01-01'),
 (2, '', '', NULL, NULL, '2021-01-03'),
 (3, '', '', NULL, NULL, '2021-01-08'),
 (4, '', '', NULL, NULL, '2021-01-15'),
 (22, 'Washington', 'Aguilar', 43, '1980-01-01', '2023-06-13'),
 (23, 'Hans Zin', 'Sanchez', 21, '2002-11-08', '2023-06-13'),
-(24, 'Jeffrey', 'Roa', 53, '1970-11-12', '2023-06-14');
+(24, 'Jeffrey', 'Roa', 53, '1970-11-12', '2023-06-14'),
+(25, 'Justine', 'Jay', 21, '2002-08-30', '2023-06-14'),
+(26, 'Hello', 'World', 21, '2002-10-01', '2023-06-14'),
+(27, 'Hector', 'Barbossa', 9, '2014-06-15', '2023-06-15'),
+(28, 'Captain', 'Marvel', 14, '2009-11-24', '2023-06-15'),
+(29, 'Jack ', 'Sparrow', 73, '1950-11-16', '2023-06-15'),
+(30, 'Elizabeth Swan', 'Kapitan Tiyago', 44, '1979-06-07', '2023-06-15'),
+(31, 'Mark ', 'Zuckerberg', 21, '2002-10-22', '2023-06-23');
 
 --
 -- Triggers `runners`
@@ -395,7 +455,7 @@ CREATE TABLE `runner_orders` (
   `distance` varchar(7) DEFAULT NULL,
   `duration` varchar(10) DEFAULT NULL,
   `cancellation` varchar(23) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `runner_orders`
@@ -439,7 +499,7 @@ CREATE TABLE `test` (
   `last_name` varchar(255) DEFAULT NULL,
   `birth_date` varchar(255) DEFAULT NULL,
   `age` varchar(255) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Indexes for dumped tables
@@ -517,7 +577,7 @@ ALTER TABLE `admins`
 -- AUTO_INCREMENT for table `customers`
 --
 ALTER TABLE `customers`
-  MODIFY `customer_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=58;
+  MODIFY `customer_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=71;
 
 --
 -- AUTO_INCREMENT for table `pizza_names`
@@ -529,13 +589,13 @@ ALTER TABLE `pizza_names`
 -- AUTO_INCREMENT for table `pizza_toppings`
 --
 ALTER TABLE `pizza_toppings`
-  MODIFY `topping_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=669;
+  MODIFY `topping_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=741;
 
 --
 -- AUTO_INCREMENT for table `runners`
 --
 ALTER TABLE `runners`
-  MODIFY `runner_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
+  MODIFY `runner_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
 
 --
 -- AUTO_INCREMENT for table `runner_orders`
