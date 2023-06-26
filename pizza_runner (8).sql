@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 24, 2023 at 02:00 AM
+-- Generation Time: Jun 26, 2023 at 09:35 AM
 -- Server version: 10.4.25-MariaDB
 -- PHP Version: 8.1.10
 
@@ -273,7 +273,8 @@ INSERT INTO `customers` (`customer_id`, `first_name`, `last_name`, `email`, `pas
 (67, 'Hel', 'World', 'world@gmail.com', '12345', '7777-111-2222', 'UwU', 'CDO', 'Lapasan', '9000', 'Philippines', '2023-06-23 11:12:57'),
 (68, 'Karl', 'Marx', 'marxZuckerber@yahoo.com', 'karl123', '0000-1111-2222', 'Address 5801', 'CDO', 'United', '9000', 'Philippines', '2023-06-23 11:23:09'),
 (69, 'Hector', 'Barbossa', 'UwU@gmail.com', 'justKillTheCode', '123456789', 'Lapsan', 'cagayan', 'meow', 'f678', 'USA', '2023-06-23 11:30:19'),
-(70, 'Hector ', 'Dragon', 'Dragon@gmaill.com', '123', '9999-999-9999', 'Lapasan', 'Wadiya', 'New Zealand', '8000', 'MeowWorld', '2023-06-23 11:39:47');
+(70, 'Hector ', 'Dragon', 'Dragon@gmaill.com', '123', '9999-999-9999', 'Lapasan', 'Wadiya', 'New Zealand', '8000', 'MeowWorld', '2023-06-23 11:39:47'),
+(71, 'Logan', 'Paul', 'logan@email.com', '12345', '777-6666-2222', 'Lapasan', 'Lapasan', 'United', '9000', 'China', '2023-06-24 09:18:00');
 
 -- --------------------------------------------------------
 
@@ -458,44 +459,45 @@ INSERT INTO `denormalized_table` (`order_id`, `runner_id`, `customer_id`, `pizza
 CREATE TABLE `pizza_names` (
   `pizza_id` int(11) NOT NULL,
   `pizza_name` text DEFAULT NULL,
-  `pizza_image` blob DEFAULT NULL
+  `pizza_image` varchar(255) DEFAULT NULL,
+  `price` float NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `pizza_names`
 --
 
-INSERT INTO `pizza_names` (`pizza_id`, `pizza_name`, `pizza_image`) VALUES
-(1, 'Meat Lovers', NULL),
-(2, 'Vegetarian', NULL),
-(10, 'Hawaiian Pizza', ''),
-(11, 'Mozarella Cheese', ''),
-(12, 'Ham and Cheese Pizzawrap', ''),
-(13, 'Spam Hawaiian Pizzawrap', ''),
-(14, 'Chorizo Pepperoni Pizzawrap', ''),
-(15, 'Spam Hawaiian Pizzawrap Value Meal', ''),
-(16, 'Chorizo Pepperoni Pizzawrap Value Meal', ''),
-(17, 'Chowking Pizza', NULL),
-(18, 'Margherita', ''),
-(19, 'Pepperoni', ''),
-(20, 'Hawaiian', ''),
-(21, 'Mushroom', ''),
-(22, 'BBQ Chicken', ''),
-(23, 'Supreme', ''),
-(24, 'Veggie Delight', ''),
-(25, 'Four Cheese', ''),
-(26, 'Spinach Alfredo', ''),
-(27, 'Mediterranean', ''),
-(28, 'Buffalo Chicken', ''),
-(29, 'Meat Feast', ''),
-(30, 'Capricciosa', ''),
-(31, 'Barbecue Bacon', ''),
-(32, 'Truffle Mushroom', ''),
-(33, 'Chicken Tikka', ''),
-(34, 'Greek', ''),
-(35, 'Seafood', ''),
-(36, 'Vegan', ''),
-(37, 'Spicy Italian', '');
+INSERT INTO `pizza_names` (`pizza_id`, `pizza_name`, `pizza_image`, `price`) VALUES
+(1, 'Meat Lovers', 'hawaiian.png', 0),
+(2, 'Vegetarian', 'vegetarian.png', 0),
+(10, 'Hawaiian Pizza', 'hawaiian.png', 0),
+(11, 'Mozarella Cheese', 'hawaiian.png', 0),
+(12, 'Ham and Cheese Pizzawrap', 'hawaiian.png', 0),
+(13, 'Spam Hawaiian Pizzawrap', 'hawaiian.png', 0),
+(14, 'Chorizo Pepperoni Pizzawrap', 'hawaiian.png', 0),
+(15, 'Spam Hawaiian Pizzawrap Value Meal', 'hawaiian.png', 0),
+(16, 'Chorizo Pepperoni Pizzawrap Value Meal', 'hawaiian.png', 0),
+(17, 'Chowking Pizza', 'hawaiian.png', 0),
+(18, 'Margherita', 'hawaiian.png', 0),
+(19, 'Pepperoni', 'hawaiian.png', 0),
+(20, 'Hawaiian', 'hawaiian.png', 0),
+(21, 'Mushroom', 'hawaiian.png', 0),
+(22, 'BBQ Chicken', 'hawaiian.png', 0),
+(23, 'Supreme', 'hawaiian.png', 0),
+(24, 'Veggie Delight', 'hawaiian.png', 0),
+(25, 'Four Cheese', 'hawaiian.png', 0),
+(26, 'Spinach Alfredo', 'hawaiian.png', 0),
+(27, 'Mediterranean', 'hawaiian.png', 0),
+(28, 'Buffalo Chicken', 'hawaiian.png', 0),
+(29, 'Meat Feast', 'hawaiian.png', 0),
+(30, 'Capricciosa', 'hawaiian.png', 0),
+(31, 'Barbecue Bacon', 'hawaiian.png', 0),
+(32, 'Truffle Mushroom', 'hawaiian.png', 0),
+(33, 'Chicken Tikka', 'hawaiian.png', 0),
+(34, 'Greek', 'hawaiian.png', 0),
+(35, 'Seafood', 'hawaiian.png', 0),
+(36, 'Vegan', 'hawaiian.png', 0),
+(37, 'Spicy Italian', 'hawaiian.png', 0);
 
 --
 -- Triggers `pizza_names`
@@ -565,18 +567,18 @@ CREATE TABLE `pizza_toppings` (
 --
 
 INSERT INTO `pizza_toppings` (`topping_id`, `topping_name`) VALUES
-(741, 'Bacon'),
-(742, 'BBQ Sauce'),
-(743, 'Beef'),
-(744, 'Cheese'),
-(745, 'Chicken'),
-(746, 'Mushrooms'),
-(747, 'Onions'),
-(748, 'Pepperoni'),
-(749, 'Peppers'),
-(750, 'Salami'),
-(751, 'PTomatoes'),
-(752, 'Tomato Sauce');
+(753, 'Ham'),
+(754, 'Pineapple'),
+(755, 'Mozzarella'),
+(756, 'Spinach'),
+(757, 'Olives'),
+(758, 'Sausage'),
+(759, 'Garlic'),
+(760, 'Artichokes'),
+(761, 'Basil'),
+(762, 'Feta Cheese'),
+(763, 'Ricotta'),
+(764, 'Red Onions');
 
 --
 -- Triggers `pizza_toppings`
@@ -923,7 +925,7 @@ ALTER TABLE `admins`
 -- AUTO_INCREMENT for table `customers`
 --
 ALTER TABLE `customers`
-  MODIFY `customer_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=71;
+  MODIFY `customer_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=72;
 
 --
 -- AUTO_INCREMENT for table `pizza_names`
@@ -935,7 +937,7 @@ ALTER TABLE `pizza_names`
 -- AUTO_INCREMENT for table `pizza_toppings`
 --
 ALTER TABLE `pizza_toppings`
-  MODIFY `topping_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=753;
+  MODIFY `topping_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=765;
 
 --
 -- AUTO_INCREMENT for table `runners`
