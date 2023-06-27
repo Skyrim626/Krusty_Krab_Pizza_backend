@@ -18,7 +18,15 @@ $sql = 'SELECT * FROM admins WHERE username = "' . $data["username"] . '" AND pa
 $result = $mysqli->query($sql);
 
 if ($result->num_rows > 0) {
-    echo json_encode(["status" => true, "message" => "account found"]);
+    /* echo json_encode(["status" => true, "message" => "account found"]); */
+    $adminData = $result->fetch_assoc();
+
+    $response = array(
+        'status' => true,
+        'adminData' => $adminData
+    );
+
+    echo json_encode($response);
 } else {
     echo json_encode(["status" => false, "message" => "account not found"]);
 }
